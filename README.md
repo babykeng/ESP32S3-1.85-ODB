@@ -1,3 +1,7 @@
+
+![描述](tools/screenshots/out/02_clock.png)
+
+
 # ESP32-S3 OBD HUD Firmware
 
 这是 ESP32-S3 OBD HUD 固件工程，基于 ESP-IDF 和 LVGL，目标芯片为 ESP32-S3。
