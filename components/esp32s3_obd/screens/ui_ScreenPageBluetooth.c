@@ -149,14 +149,7 @@ void ui_ScreenPageBluetooth_screen_init(void)
     lv_obj_set_style_bg_color(ui_ScreenPageBluetooth, lv_color_hex(0x050807), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(ui_ScreenPageBluetooth, 255, LV_PART_MAIN);
 
-    lv_obj_t *ring = lv_obj_create(ui_ScreenPageBluetooth);
-    lv_obj_remove_style_all(ring);
-    lv_obj_set_size(ring, 344, 344);
-    lv_obj_center(ring);
-    lv_obj_set_style_radius(ring, LV_RADIUS_CIRCLE, LV_PART_MAIN);
-    lv_obj_set_style_border_width(ring, 6, LV_PART_MAIN);
-    lv_obj_set_style_border_color(ring, lv_color_hex(0x24D18F), LV_PART_MAIN);
-    lv_obj_set_style_border_opa(ring, 140, LV_PART_MAIN);
+    ui_create_outer_ring(ui_ScreenPageBluetooth, 360, 10, lv_color_hex(0x24D18F));
 
     make_label(ui_ScreenPageBluetooth, "Bluetooth", 0, 26, lv_color_hex(0xFFFFFF));
     s_status_label = make_label(ui_ScreenPageBluetooth, "Scanning", 0, 52, lv_color_hex(0xF2C14E));

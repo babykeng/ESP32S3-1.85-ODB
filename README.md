@@ -143,7 +143,7 @@ idf.py -p PORT flash monitor
 
 ## UI 截图
 
-更新时间：`2026-06-19 22:14:42 CST`
+更新时间：`2026-06-20 00:01:44 CST`
 
 本项目提供本地 LVGL 截图工具，直接复用固件里的 UI、字体、Logo 和 LVGL 绘制源码，按 `360 x 360` 生成每个界面的 PNG：
 
@@ -186,3 +186,4 @@ tools/screenshots/out/
 - Dashboard RPM 指针改为尾粗前尖的红色楔形多边形，由平滑后的 RPM cache 数据驱动。
 - 2026-06-19 22:06:34 CST：优化 OBD cache 响应速度，动态平滑 speed/RPM，并提高 speed/RPM 轮询优先级。
 - 2026-06-19 22:14:42 CST：新增本地 LVGL 全界面截图工具，输出 7 张 `360 x 360` PNG，用于对照烧录后显示。
+- 2026-06-20 00:01:44 CST：Bluetooth 页面外圈改为与 GPS UART 页面一致的绿色外圈，并刷新对应截图。
