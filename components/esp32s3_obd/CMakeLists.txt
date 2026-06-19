@@ -1,0 +1,28 @@
+idf_component_register(
+    SRC_DIRS
+        "."
+        "screens"
+        "fonts"
+        "images"
+        "bsp_obd_dsp/exio"
+        "bsp_obd_dsp/i2c_driver"
+        "bsp_obd_dsp/lcd_driver"
+        "bsp_obd_dsp/lcd_driver/esp_lcd_st77916"
+        "bsp_obd_dsp/pcf85063"
+        "bsp_obd_dsp/qmi8658"
+        "bsp_obd_dsp/touch_driver"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        lvgl__lvgl
+        espressif__esp_lcd_touch
+        esp_lcd
+        esp_timer
+        esp_event
+        esp_netif
+        esp_wifi
+        lwip
+        driver
+        bt
+        nvs_flash
+)

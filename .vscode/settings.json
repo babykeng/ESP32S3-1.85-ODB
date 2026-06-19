@@ -1,0 +1,17 @@
+{
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32s3"
+  },
+  "idf.port": "/dev/tty.usbmodem21101",
+  "idf.openOcdConfigs": [
+    "board/esp32s3-builtin.cfg"
+  ],
+  "idf.flashType": "UART",
+  "clangd.path": "/Users/bk/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=/Users/bk/Desktop/Workarea/project05_car-hud-mastermod/build"
+  ],
+  "idf.currentSetup": "/Users/bk/.espressif/v5.5.4/esp-idf"
+}
