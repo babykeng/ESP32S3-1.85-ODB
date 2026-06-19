@@ -1,6 +1,7 @@
 
-![描述](tools/screenshots/out/02_clock.png)
-
+![描述](tools/screenshots/out/02_clock.png)![描述](tools/screenshots/out/03_imu.png)
+![描述](tools/screenshots/out/04_dashboard.png)![描述](tools/screenshots/out/05_gps_uart.png)
+![描述](tools/screenshots/out/06_obd_details.png)![描述](tools/screenshots/out/07_bluetooth.png)
 
 # ESP32-S3 OBD HUD Firmware
 
