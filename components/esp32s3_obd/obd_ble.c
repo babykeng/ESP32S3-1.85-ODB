@@ -569,46 +569,54 @@ static void obd_poll_task(void *arg)
     }
 
     uint32_t tick = 0;
+    uint32_t slow_tick = 0;
     while(s_ready) {
-        switch(tick % 16) {
+        switch(tick % 12) {
         case 0:
+        case 3:
         case 6:
-        case 12:
+        case 9:
             write_obd_blocking(CMD_SPEED, sizeof(CMD_SPEED) - 1);
             break;
         case 1:
+        case 4:
         case 7:
-        case 13:
+        case 10:
             write_obd_blocking(CMD_RPM, sizeof(CMD_RPM) - 1);
             break;
         case 2:
-        case 8:
             write_obd_blocking(CMD_TEMP, sizeof(CMD_TEMP) - 1);
             break;
-        case 3:
-            write_obd_blocking(CMD_FUEL, sizeof(CMD_FUEL) - 1);
-            break;
-        case 4:
-            write_obd_blocking(CMD_ENGINE_LOAD, sizeof(CMD_ENGINE_LOAD) - 1);
-            break;
         case 5:
-            write_obd_blocking(CMD_THROTTLE, sizeof(CMD_THROTTLE) - 1);
-            break;
-        case 9:
-            write_obd_blocking(CMD_INTAKE_TEMP, sizeof(CMD_INTAKE_TEMP) - 1);
-            break;
-        case 10:
-            write_obd_blocking(CMD_VOLTAGE, sizeof(CMD_VOLTAGE) - 1);
-            break;
+        case 8:
         case 11:
-            write_obd_blocking(CMD_OIL_TEMP, sizeof(CMD_OIL_TEMP) - 1);
+            switch(slow_tick++ % 6) {
+            case 0:
+                write_obd_blocking(CMD_FUEL, sizeof(CMD_FUEL) - 1);
+                break;
+            case 1:
+                write_obd_blocking(CMD_ENGINE_LOAD, sizeof(CMD_ENGINE_LOAD) - 1);
+                break;
+            case 2:
+                write_obd_blocking(CMD_THROTTLE, sizeof(CMD_THROTTLE) - 1);
+                break;
+            case 3:
+                write_obd_blocking(CMD_INTAKE_TEMP, sizeof(CMD_INTAKE_TEMP) - 1);
+                break;
+            case 4:
+                write_obd_blocking(CMD_VOLTAGE, sizeof(CMD_VOLTAGE) - 1);
+                break;
+            default:
+                write_obd_blocking(CMD_OIL_TEMP, sizeof(CMD_OIL_TEMP) - 1);
+                break;
+            }
             break;
         default:
             break;
         }
 
         tick++;
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(80));
     }
     ESP_LOGI(TAG, "OBD poll task stopped");
     vTaskDelete(NULL);

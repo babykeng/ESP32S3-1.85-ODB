@@ -48,10 +48,10 @@ Python 3.13.14
 - 分区表：`partitions.csv`
 - LVGL：16-bit color，启用 byte swap
 - Bluetooth：启用 NimBLE，未启用 Bluedroid
-- PSRAM：当前未启用
+- PSRAM：本项目目前没有需要 PSRAM 的场景，默认不启用
 - WiFi/NTP：功能已接入，默认未配置 SSID，不会主动联网
 
-PSRAM 相关配置：
+PSRAM 相关配置保持关闭：
 
 ```text
 # CONFIG_SPIRAM is not set
@@ -104,11 +104,19 @@ WiFi/NTP 默认不启用。需要联网校时时，在构建前给 `NEWFEATURES_
 - 新增 `components/esp32s3_obd/obd_data_cache.h`
 - BLE OBD PID 解析成功后写入 cache
 - `obd_ble_get_snapshot()` 返回时从 cache 读取数据
-- RPM / speed getter 使用一阶滤波，显示数值缓升缓降
+- RPM / speed getter 使用动态一阶滤波，显示数值平滑但大变化时更快跟随
 - 冷却液温度、进气温度、发动机负荷、TPS、电压、油量、机油温进入统一 cache
 - BLE 新连接开始时清空 cache，避免上一次连接的数据残留
 
 未移植 `project02_bd_gauge` 中依赖 `nvs_storage` 的里程统计任务；当前工程暂只接入实时 OBD 数据缓存。
+
+### OBD Cache 响应优化
+
+更新时间：`2026-06-19 22:06:34 CST`
+
+- RPM / speed 平滑时间常数下调，并增加大跳变快速跟随逻辑，减少仪表滞后感。
+- cache 清空时同步重置平滑状态，避免新连接后沿用上一辆车或上一次连接的旧平滑值。
+- OBD 轮询节奏更偏向 speed / RPM，非关键 PID 改为慢速轮询，提升实时数据刷新感。
 
 ## Dashboard UI
 
@@ -128,6 +136,34 @@ idf.py -p PORT flash monitor
 
 将 `PORT` 替换为实际串口设备。
 
+## UI 截图
+
+更新时间：`2026-06-19 22:14:42 CST`
+
+本项目提供本地 LVGL 截图工具，直接复用固件里的 UI、字体、Logo 和 LVGL 绘制源码，按 `360 x 360` 生成每个界面的 PNG：
+
+```bash
+make -C tools/screenshots screenshots
+```
+
+输出目录：
+
+```text
+tools/screenshots/out/
+```
+
+当前生成页面：
+
+- `01_logo.png`
+- `02_clock.png`
+- `03_imu.png`
+- `04_dashboard.png`
+- `05_gps_uart.png`
+- `06_obd_details.png`
+- `07_bluetooth.png`
+
+截图工具使用默认无 OBD / GPS / IMU 数据状态；烧录后如接入实时数据，动态文字、指针和状态颜色会随真实数据变化。
+
 ## 近期修复
 
 - 修复蓝牙页面点击 `scan all` 后触发 `ble_scan_restart` 栈溢出重启的问题。
@@ -143,3 +179,5 @@ idf.py -p PORT flash monitor
 - Dashboard 大圆弧加宽并改为实色显示，RPM 数字居中落在圆弧带上。
 - Dashboard 底部小圆弧与冷却液温度绑定，水温超过 `95°C` 时变红。
 - Dashboard RPM 指针改为尾粗前尖的红色楔形多边形，由平滑后的 RPM cache 数据驱动。
+- 2026-06-19 22:06:34 CST：优化 OBD cache 响应速度，动态平滑 speed/RPM，并提高 speed/RPM 轮询优先级。
+- 2026-06-19 22:14:42 CST：新增本地 LVGL 全界面截图工具，输出 7 张 `360 x 360` PNG，用于对照烧录后显示。

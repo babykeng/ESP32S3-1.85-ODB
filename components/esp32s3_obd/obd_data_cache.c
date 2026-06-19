@@ -6,9 +6,13 @@
 #include "freertos/portmacro.h"
 #include "freertos/task.h"
 
-#define RPM_SMOOTH_TIME_MS   1000U
-#define SPEED_SMOOTH_TIME_MS 1000U
-#define FALL_TO_ZERO_MS      500U
+#define RPM_SMOOTH_TIME_MS        650U
+#define SPEED_SMOOTH_TIME_MS      600U
+#define RPM_FAST_SMOOTH_TIME_MS   180U
+#define SPEED_FAST_SMOOTH_TIME_MS 220U
+#define RPM_FAST_DELTA            700.0f
+#define SPEED_FAST_DELTA          8.0f
+#define FALL_TO_ZERO_MS           300U
 
 #define FINAL_DRIVE_RATIO      4.052f
 #define TIRE_ROLLING_RADIUS_M  0.298f
@@ -48,19 +52,37 @@ static volatile uint8_t s_engine_load_percent;
 static volatile uint8_t s_throttle_percent;
 static volatile uint16_t s_voltage_mv;
 static volatile int16_t s_oil_temp_c = -100;
+static volatile uint32_t s_cache_generation;
 
 static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
 
-static uint16_t smooth_u16(uint16_t raw, float *smooth, TickType_t *last_tick, uint32_t smooth_time_ms)
+static uint16_t smooth_u16(uint16_t raw, float *smooth, TickType_t *last_tick,
+                           uint32_t *seen_generation, uint32_t generation,
+                           uint32_t smooth_time_ms, uint32_t fast_smooth_time_ms,
+                           float fast_delta)
 {
     TickType_t now_tick = xTaskGetTickCount();
     uint32_t dt_ms = 0;
-    if(*last_tick != 0) {
+    if(*seen_generation != generation) {
+        *seen_generation = generation;
+        *last_tick = 0;
+    } else if(*last_tick != 0) {
         dt_ms = (uint32_t)((now_tick - *last_tick) * portTICK_PERIOD_MS);
         if(dt_ms > 1000U) dt_ms = 1000U;
     }
 
     uint32_t tc = raw == 0 ? FALL_TO_ZERO_MS : smooth_time_ms;
+    if(raw != 0 && fast_delta > 0.0f && fast_smooth_time_ms < tc) {
+        float delta = (float)raw - *smooth;
+        if(delta < 0.0f) delta = -delta;
+        if(delta >= fast_delta) {
+            tc = fast_smooth_time_ms;
+        } else {
+            float ratio = delta / fast_delta;
+            tc = (uint32_t)((float)smooth_time_ms -
+                            ((float)(smooth_time_ms - fast_smooth_time_ms) * ratio));
+        }
+    }
     float alpha = tc == 0 ? 1.0f : (float)dt_ms / (float)tc;
     if(alpha > 1.0f) alpha = 1.0f;
 
@@ -95,6 +117,7 @@ void obd_data_cache_clear(void)
     s_throttle_percent = 0;
     s_voltage_mv = 0;
     s_oil_temp_c = -100;
+    s_cache_generation++;
     portEXIT_CRITICAL(&s_mux);
 }
 
@@ -185,22 +208,32 @@ uint16_t obd_data_get_speed(void)
 {
     static TickType_t last_tick = 0;
     static float smooth = 0.0f;
+    static uint32_t seen_generation = 0;
     uint16_t raw;
+    uint32_t generation;
     portENTER_CRITICAL(&s_mux);
     raw = s_speed_kmh;
+    generation = s_cache_generation;
     portEXIT_CRITICAL(&s_mux);
-    return smooth_u16(raw, &smooth, &last_tick, SPEED_SMOOTH_TIME_MS);
+    return smooth_u16(raw, &smooth, &last_tick, &seen_generation, generation,
+                      SPEED_SMOOTH_TIME_MS, SPEED_FAST_SMOOTH_TIME_MS,
+                      SPEED_FAST_DELTA);
 }
 
 uint16_t obd_data_get_rpm(void)
 {
     static TickType_t last_tick = 0;
     static float smooth = 0.0f;
+    static uint32_t seen_generation = 0;
     uint16_t raw;
+    uint32_t generation;
     portENTER_CRITICAL(&s_mux);
     raw = s_rpm;
+    generation = s_cache_generation;
     portEXIT_CRITICAL(&s_mux);
-    return smooth_u16(raw, &smooth, &last_tick, RPM_SMOOTH_TIME_MS);
+    return smooth_u16(raw, &smooth, &last_tick, &seen_generation, generation,
+                      RPM_SMOOTH_TIME_MS, RPM_FAST_SMOOTH_TIME_MS,
+                      RPM_FAST_DELTA);
 }
 
 uint8_t obd_data_get_fuel_percent(void)
