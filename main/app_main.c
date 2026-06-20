@@ -24,6 +24,7 @@
 #include "gps_uart.h"
 #include "newfeatures.h"
 #include "obd_ble.h"
+#include "remote_control.h"
 #include "ui.h"
 
 static const char *TAG = "logo_app";
@@ -148,6 +149,15 @@ static void init_nvs(void)
     ESP_ERROR_CHECK(err);
 }
 
+static void delayed_obd_ble_task(void *arg)
+{
+    (void)arg;
+    ESP_LOGI(TAG, "OBD BLE start delayed for SoftAP join diagnostics");
+    vTaskDelay(pdMS_TO_TICKS(10000));
+    obd_ble_start();
+    vTaskDelete(NULL);
+}
+
 void app_main(void)
 {
     static lv_disp_draw_buf_t disp_buf;
@@ -230,8 +240,14 @@ void app_main(void)
 
     if(lvgl_lock(-1)) {
         boot_logo_ui_init();
+        remote_control_ui_init();
         lvgl_unlock();
     }
 
-    obd_ble_start();
+    esp_err_t remote_err = remote_control_start();
+    if(remote_err != ESP_OK) {
+        ESP_LOGW(TAG, "Remote control unavailable: %s", esp_err_to_name(remote_err));
+    }
+
+    xTaskCreate(delayed_obd_ble_task, "obd_ble_delay", 4096, NULL, 3, NULL);
 }

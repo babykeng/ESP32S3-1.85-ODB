@@ -25,6 +25,7 @@
 - PCF85063 RTC 驱动
 - QMI8658 六轴驱动
 - WiFi + NTP 校时支持
+- SoftAP + Web / Apple Shortcuts GET 远程切换页面
 
 ## 环境
 
@@ -101,6 +102,35 @@ build/esp32s3_obd.bin
 
 WiFi/NTP 默认不启用。需要联网校时时，在构建前给 `NEWFEATURES_WIFI_SSID` 和
 `NEWFEATURES_WIFI_PASS` 提供非空值，或后续改成 menuconfig 配置项。
+
+## SoftAP 远程控制
+
+更新时间：`2026-06-20 20:47:54 CST`
+
+固件启动后会开启 SoftAP 和轻量 HTTP 控制页面：
+
+```text
+SSID: SCR-CTRL
+PASS: 无密码
+URL:  http://192.168.4.1/
+```
+
+手机连接 `SCR-CTRL` 后，可在浏览器打开 `http://192.168.4.1/` 使用网页按钮切换页面。
+如果手机曾保存旧密码，先在 Wi-Fi 设置里忽略/忘记旧的 `HUD-CTRL` / `SCR-CTRL`，再重新加入开放热点。
+苹果快捷指令可使用“获取 URL 内容”调用以下 GET 地址：
+
+```text
+http://192.168.4.1/next
+http://192.168.4.1/prev
+http://192.168.4.1/screen?name=clock
+http://192.168.4.1/screen?name=imu
+http://192.168.4.1/screen?name=dashboard
+http://192.168.4.1/screen?name=gps
+http://192.168.4.1/screen?name=details
+http://192.168.4.1/screen?name=bluetooth
+```
+
+HTTP 请求不会直接操作 LVGL；请求会先进入队列，再由 LVGL timer 在 UI 线程内执行页面切换。
 
 ## OBD Cache 移植内容
 
@@ -208,3 +238,10 @@ tools/screenshots/out/
 - 2026-06-20 16:48:24 CST：Clock 页面静态表盘改为离线生成底图，固定时间截图与旧绘制路径逐字节 `0 diff`。
 - 2026-06-20 16:54:58 CST：IMU 页面静态层改为离线生成底图，固定时间截图与旧绘制路径逐字节 `0 diff`。
 - 2026-06-20 17:01:01 CST：GPS UART 页面状态点下方新增 `GPS` 小字注释，并刷新对应截图。
+- 2026-06-20 20:47:54 CST：新增 SoftAP + Web 页面 + Apple Shortcuts GET API，可远程切换 HUD 页面。
+- 2026-06-20 20:53:34 CST：SoftAP 改为明确 WPA2-PSK + CCMP/AES，关闭强制 PMF，默认密码更新为 `hudctrl88` 以提升 iPhone 加入兼容性。
+- 2026-06-20 20:57:29 CST：SoftAP 临时改为开放热点并固定 channel 1，用于排查 iPhone / Android 均无法加入的问题。
+- 2026-06-20 21:03:26 CST：SoftAP 增加 AP start / station join / station leave 日志，并将 BLE 扫描延后 10 秒，用于隔离 Wi-Fi AP 与 BLE 共存影响。
+- 2026-06-20 21:17:43 CST：SoftAP Web 控制页按钮改为后台 fetch 请求，浏览器点击后保留在控制页面；GET API 继续兼容苹果快捷指令。
+- 2026-06-20 21:32:47 CST：SoftAP 名称改为 `SCR-CTRL`，继续保持开放热点、无密码。
+- 2026-06-20 21:36:00 CST：SoftAP 最大连接数从 2 提升到 4，避免手机/电脑多端调试时出现 `max connection, deauth`。

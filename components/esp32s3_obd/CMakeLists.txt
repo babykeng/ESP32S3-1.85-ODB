@@ -20,6 +20,7 @@ idf_component_register(
         esp_timer
         esp_event
         esp_netif
+        esp_http_server
         esp_wifi
         lwip
         driver
