@@ -24,6 +24,7 @@ static lv_obj_t *s_subdial = NULL;
 static lv_obj_t *s_subdial_hub = NULL;
 static lv_obj_t *s_main_hub = NULL;
 static lv_obj_t *s_tick_layer = NULL;
+static lv_obj_t *s_static_bg = NULL;
 static uint8_t s_theme_idx = 0;
 static int64_t s_time_offset_sec = 0;
 static uint32_t s_last_click_tick = 0;
@@ -36,6 +37,24 @@ static uint16_t s_subdial_hour_angle = 0;
 static uint8_t s_last_digits[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
 static void clock_timer_cb(lv_timer_t *timer);
+
+#if !defined(CLOCK_DISABLE_STATIC_BG) && !defined(CLOCK_SCREENSHOT_STATIC_BG)
+#define CLOCK_USE_STATIC_BG 1
+#endif
+
+#if CLOCK_USE_STATIC_BG
+extern const lv_img_dsc_t clockStaticBgTheme0;
+extern const lv_img_dsc_t clockStaticBgTheme1;
+extern const lv_img_dsc_t clockStaticBgTheme2;
+extern const lv_img_dsc_t clockStaticBgTheme3;
+
+static const lv_img_dsc_t *const s_static_bg_images[] = {
+    &clockStaticBgTheme0,
+    &clockStaticBgTheme1,
+    &clockStaticBgTheme2,
+    &clockStaticBgTheme3,
+};
+#endif
 
 typedef enum {
     SET_MODE_NONE,
@@ -465,11 +484,18 @@ static void set_clock_time(uint32_t hour, uint32_t min)
 
 static void apply_theme(uint8_t idx)
 {
+    const theme_t *theme = &s_themes[idx % theme_count()];
+
+#if CLOCK_USE_STATIC_BG
+    if(s_static_bg != NULL) {
+        lv_img_set_src(s_static_bg, s_static_bg_images[idx % theme_count()]);
+        return;
+    }
+#endif
+
     if(s_outer_disc == NULL || s_mid_disc == NULL || s_inner_disc == NULL || s_subdial == NULL) {
         return;
     }
-
-    const theme_t *theme = &s_themes[idx % theme_count()];
 
     lv_obj_set_style_bg_color(s_outer_disc, lv_color_hex(theme->outer), LV_PART_MAIN);
     lv_obj_set_style_border_color(s_outer_disc, lv_color_hex(theme->outer_border), LV_PART_MAIN);
@@ -651,7 +677,11 @@ void ui_ScreenPageClock_screen_init(void)
         return;
     }
 
+#ifdef CLOCK_SCREENSHOT_THEME
+    s_theme_idx = CLOCK_SCREENSHOT_THEME % theme_count();
+#else
     load_theme_idx();
+#endif
 
     lv_obj_t *screen = lv_obj_create(NULL);
     ui_ScreenPageClock = screen;
@@ -665,6 +695,12 @@ void ui_ScreenPageClock_screen_init(void)
     lv_obj_set_style_bg_color(screen, lv_color_hex(0x110000), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(screen, 255, LV_PART_MAIN);
 
+#if CLOCK_USE_STATIC_BG
+    s_static_bg = lv_img_create(screen);
+    lv_img_set_src(s_static_bg, s_static_bg_images[s_theme_idx % theme_count()]);
+    lv_obj_align(s_static_bg, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_clear_flag(s_static_bg, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+#else
     s_outer_disc = circle(screen, 0, 0, 360, lv_color_hex(0xD70713), 4, lv_color_hex(0x7D0007));
     s_mid_disc = circle(screen, 0, 0, 324, lv_color_hex(0xDB1019), 2, lv_color_hex(0xF65A60));
     s_inner_disc = circle(screen, 0, 0, 222, lv_color_hex(0xCF0912), 2, lv_color_hex(0x7D0007));
@@ -680,7 +716,9 @@ void ui_ScreenPageClock_screen_init(void)
     for(uint8_t i = 0; i < 12; i++) {
         if(labels[i][0] != '\0') outer_label(screen, labels[i], i * 30);
     }
+#endif
 
+#ifndef CLOCK_SCREENSHOT_STATIC_BG
     s_time_box = lv_obj_create(screen);
     lv_obj_remove_style_all(s_time_box);
     lv_obj_set_size(s_time_box, 144, 64);
@@ -706,7 +744,9 @@ void ui_ScreenPageClock_screen_init(void)
     lv_obj_set_style_bg_color(s_set_marker, lv_color_hex(0xFFD45A), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(s_set_marker, 255, LV_PART_MAIN);
     lv_obj_add_flag(s_set_marker, LV_OBJ_FLAG_HIDDEN);
+#endif
 
+#if !CLOCK_USE_STATIC_BG
     s_subdial = circle(screen, 0, 89, 106, lv_color_hex(0xD70713), 2, lv_color_hex(0xFFFFFF));
     apply_theme(s_theme_idx);
     lv_obj_move_foreground(s_tick_layer);
@@ -714,6 +754,10 @@ void ui_ScreenPageClock_screen_init(void)
     subdial_label(screen, "3", 37, 90);
     subdial_label(screen, "6", 37, 180);
     subdial_label(screen, "9", 37, 270);
+#ifdef CLOCK_SCREENSHOT_STATIC_BG
+    return;
+#endif
+#endif
     s_subdial_hub = circle(screen, 0, 89, 16, lv_color_hex(0xFFFFFF), 0, lv_color_hex(0xFFFFFF));
 
     s_subdial_hand_layer = lv_obj_create(screen);

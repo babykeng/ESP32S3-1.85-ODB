@@ -146,6 +146,9 @@ void ui_ScreenPageUART_screen_init(void)
     lv_obj_align(s_status_dot, LV_ALIGN_CENTER, -84, -134);
     lv_obj_clear_flag(s_status_dot, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
 
+    make_label(ui_ScreenPageUART, "GPS", &ui_font_FontTypoderSize20,
+               lv_color_hex(0x6FAF97), -84, -112, 54, LV_TEXT_ALIGN_CENTER);
+
     s_time_label = make_label(ui_ScreenPageUART, "--:--:--", &ui_font_FontTypoderSize24,
                               lv_color_hex(0xFFFFFF), 34, -134, 150, LV_TEXT_ALIGN_LEFT);
 

@@ -1,13 +1,18 @@
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <time.h>
 
 #include "lvgl.h"
 
 #include "components/esp32s3_obd/ui.h"
+
+#undef time
+#undef gettimeofday
 
 #define SCREEN_W 360
 #define SCREEN_H 360
@@ -26,6 +31,52 @@ typedef struct {
     screen_init_fn init;
     uint32_t settle_ms;
 } screen_capture_t;
+
+static bool fixed_epoch_enabled(time_t *epoch_out)
+{
+    const char *value = getenv("SCREENSHOT_FIXED_EPOCH");
+    if(value == NULL || value[0] == '\0') return false;
+
+    char *end = NULL;
+    long long parsed = strtoll(value, &end, 10);
+    if(end == value) return false;
+
+    *epoch_out = (time_t)parsed;
+    return true;
+}
+
+time_t screenshot_time(time_t *out)
+{
+    time_t now;
+    if(fixed_epoch_enabled(&now)) {
+    } else {
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        now = ts.tv_sec;
+    }
+
+    if(out != NULL) *out = now;
+    return now;
+}
+
+int screenshot_gettimeofday(struct timeval *tv, void *tz)
+{
+    (void)tz;
+    if(tv == NULL) return -1;
+
+    time_t base;
+    if(fixed_epoch_enabled(&base)) {
+        tv->tv_sec = base;
+        tv->tv_usec = 0;
+        return 0;
+    }
+
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    tv->tv_sec = ts.tv_sec;
+    tv->tv_usec = (suseconds_t)(ts.tv_nsec / 1000);
+    return 0;
+}
 
 static void flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
 {

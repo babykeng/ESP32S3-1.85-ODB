@@ -4,6 +4,7 @@
 #include "bsp_obd_dsp/qmi8658/qmi8658.h"
 
 static lv_obj_t *s_dial_layer = NULL;
+static lv_obj_t *s_static_bg = NULL;
 static lv_obj_t *s_dot = NULL;
 static lv_obj_t *s_max_label = NULL;
 static lv_obj_t *s_left_label = NULL;
@@ -14,6 +15,14 @@ static uint32_t s_max_total_centi_g = 0;
 static uint32_t s_max_left_centi_g = 0;
 static uint32_t s_max_right_centi_g = 0;
 static uint32_t s_max_brake_centi_g = 0;
+
+#if !defined(IMU_DISABLE_STATIC_BG) && !defined(IMU_SCREENSHOT_STATIC_BG)
+#define IMU_USE_STATIC_BG 1
+#endif
+
+#if IMU_USE_STATIC_BG
+extern const lv_img_dsc_t imuStaticBg;
+#endif
 
 static lv_obj_t *make_label(lv_obj_t *parent, const char *text, const lv_font_t *font,
                             lv_color_t color, lv_coord_t x, lv_coord_t y,
@@ -212,6 +221,12 @@ void ui_ScreenPageIMU_screen_init(void)
     lv_obj_set_style_bg_color(ui_ScreenPageIMU, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_ScreenPageIMU, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+#if IMU_USE_STATIC_BG
+    s_static_bg = lv_img_create(ui_ScreenPageIMU);
+    lv_img_set_src(s_static_bg, &imuStaticBg);
+    lv_obj_align(s_static_bg, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_clear_flag(s_static_bg, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+#else
     ui_create_outer_ring(ui_ScreenPageIMU, 360, 10, lv_color_hex(0xD8E3DF));
 
     s_dial_layer = lv_obj_create(ui_ScreenPageIMU);
@@ -223,6 +238,10 @@ void ui_ScreenPageIMU_screen_init(void)
 
     make_label(ui_ScreenPageIMU, "G-Force Max", &ui_font_FontTypoderSize20, lv_color_hex(0xFFFFFF),
                0, -122, 210, LV_TEXT_ALIGN_CENTER);
+#ifdef IMU_SCREENSHOT_STATIC_BG
+    return;
+#endif
+#endif
     s_max_label = make_label(ui_ScreenPageIMU, "0.00", &ui_font_FontTypoderSize28,
                              lv_color_hex(0xFFFFFF), 0, -90, 120, LV_TEXT_ALIGN_CENTER);
     s_left_label = make_label(ui_ScreenPageIMU, "0.00", &ui_font_FontTypoderSize24,

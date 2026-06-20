@@ -7,12 +7,14 @@ CC ?= clang
 
 CFLAGS := -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers
 CFLAGS += -DLV_CONF_INCLUDE_SIMPLE -DLV_LVGL_H_INCLUDE_SIMPLE
+CFLAGS += -Dtime=screenshot_time -Dgettimeofday=screenshot_gettimeofday
 CFLAGS += -I.
 CFLAGS += -Istubs
 CFLAGS += -I$(ROOT)
 CFLAGS += -I$(ROOT)/components/esp32s3_obd
 CFLAGS += -I$(ROOT)/components/lvgl__lvgl
 CFLAGS += -I$(ROOT)/components/lvgl__lvgl/src
+CFLAGS += $(EXTRA_CFLAGS)
 
 LDLIBS := -lm
 
@@ -44,6 +46,8 @@ UI_SRCS := \
 	$(ROOT)/components/esp32s3_obd/fonts/ui_font_FontTypoderSize100.c \
 	$(ROOT)/components/esp32s3_obd/fonts/ui_font_FontTypoderSize140.c \
 	$(ROOT)/components/esp32s3_obd/images/pngLogoSkyGarage.c \
+	$(wildcard $(ROOT)/components/esp32s3_obd/images/clockStaticBg.c) \
+	$(wildcard $(ROOT)/components/esp32s3_obd/images/imuStaticBg.c) \
 	esp_idf_stubs.c \
 	capture_screens.c
 
@@ -53,7 +57,7 @@ LOCAL_SRCS := $(filter-out $(ROOT)/%,$(SRCS))
 OBJS := $(patsubst $(ROOT)/%.c,$(BUILD_DIR)/root/%.o,$(ROOT_SRCS))
 OBJS += $(patsubst %.c,$(BUILD_DIR)/local/%.o,$(LOCAL_SRCS))
 
-.PHONY: all clean screenshots png
+.PHONY: all clean screenshots png fixed-clock-golden fixed-clock-current compare-clock fixed-imu-golden fixed-imu-current compare-imu
 
 all: screenshots
 
@@ -80,6 +84,38 @@ screenshots: $(TARGET)
 		rm "$$f"; \
 	done
 	@echo "screenshots written to tools/screenshots/$(OUT_DIR)"
+
+fixed-clock-golden: $(TARGET)
+	mkdir -p $(OUT_DIR)
+	SCREENSHOT_FIXED_EPOCH=1766160000 $(TARGET) $(OUT_DIR)
+	cp $(OUT_DIR)/02_clock.ppm $(OUT_DIR)/02_clock_golden.ppm
+	@rm -f $(OUT_DIR)/0[134567]_*.ppm $(OUT_DIR)/02_clock.ppm
+
+fixed-clock-current: $(TARGET)
+	mkdir -p $(OUT_DIR)
+	SCREENSHOT_FIXED_EPOCH=1766160000 $(TARGET) $(OUT_DIR)
+	cp $(OUT_DIR)/02_clock.ppm $(OUT_DIR)/02_clock_current.ppm
+	@rm -f $(OUT_DIR)/0[134567]_*.ppm $(OUT_DIR)/02_clock.ppm
+
+compare-clock:
+	cmp -s $(OUT_DIR)/02_clock_golden.ppm $(OUT_DIR)/02_clock_current.ppm
+	@echo "clock screenshot pixel match: 0 diff"
+
+fixed-imu-golden: $(TARGET)
+	mkdir -p $(OUT_DIR)
+	SCREENSHOT_FIXED_EPOCH=1766160000 $(TARGET) $(OUT_DIR)
+	cp $(OUT_DIR)/03_imu.ppm $(OUT_DIR)/03_imu_golden.ppm
+	@rm -f $(OUT_DIR)/0[124567]_*.ppm $(OUT_DIR)/03_imu.ppm
+
+fixed-imu-current: $(TARGET)
+	mkdir -p $(OUT_DIR)
+	SCREENSHOT_FIXED_EPOCH=1766160000 $(TARGET) $(OUT_DIR)
+	cp $(OUT_DIR)/03_imu.ppm $(OUT_DIR)/03_imu_current.ppm
+	@rm -f $(OUT_DIR)/0[124567]_*.ppm $(OUT_DIR)/03_imu.ppm
+
+compare-imu:
+	cmp -s $(OUT_DIR)/03_imu_golden.ppm $(OUT_DIR)/03_imu_current.ppm
+	@echo "imu screenshot pixel match: 0 diff"
 
 clean:
 	rm -rf $(BUILD_DIR) $(OUT_DIR)
